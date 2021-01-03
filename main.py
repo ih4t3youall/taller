@@ -1,4 +1,8 @@
+import pickle
+
 import urwid
+from Bike import Bike
+
 
 class ActionButton(urwid.Button):
     def __init__(self, caption, callback):
@@ -7,15 +11,18 @@ class ActionButton(urwid.Button):
         self._w = urwid.AttrMap(urwid.SelectableIcon(caption, 1),
                                 None, focus_map='reversed')
 
+
 class Main(urwid.WidgetWrap):
     def __init__(self, choices):
         super(Main, self).__init__(
             ActionButton([u" > go to ", 'Main'], self.enter_place))
         self.heading = urwid.Text([u"\nLocation: ", 'Main', "\n"])
         self.choices = choices
-        # create links back to ourself
-        for child in choices:
-            getattr(child, 'choices', []).insert(0, self)
+        self.interactions = []
+
+    def get_interactions(self):
+        self.interactions = []
+        return self.interactions
 
     def enter_place(self, button):
         game.update_place(self)
@@ -28,8 +35,11 @@ class Workshop(urwid.WidgetWrap):
         self.heading = urwid.Text([u"\nLocation: ", 'Workshop', "\n"])
         self.choices = choices
         # create links back to ourself
-        for child in choices:
+
+    def get_interactions(self):
+        for child in self.choices:
             getattr(child, 'choices', []).insert(0, self)
+        return None
 
     def enter_place(self, button):
         game.update_place(self)
@@ -40,12 +50,17 @@ class SelectBike(urwid.WidgetWrap):
             ActionButton([u" > go to ", 'Select Bike'], self.enter_place))
         self.heading = urwid.Text([u"\nLocation: ", 'Select Bike', "\n"])
         self.choices = choices
+        self.interactions = []
         # create links back to ourself
-        for child in choices:
+
+    def get_interactions(self):
+        for child in self.choices:
             getattr(child, 'choices', []).insert(0, self)
+        return None
 
     def enter_place(self, button):
         game.update_place(self)
+
 
 class WorkshopBike(urwid.WidgetWrap):
     def __init__(self, choices):
@@ -53,27 +68,33 @@ class WorkshopBike(urwid.WidgetWrap):
             ActionButton([u" > go to ", 'Workshop Bike'], self.enter_place))
         self.heading = urwid.Text([u"\nLocation: ", 'workshop bike', "\n"])
         self.choices = choices
+        self.interactions = []
         # create links back to ourself
-        for child in choices:
+
+    def get_interactions(self):
+        for child in self.choices:
             getattr(child, 'choices', []).insert(0, self)
+        return None
 
     def enter_place(self, button):
         game.update_place(self)
 
-
 class Service(urwid.WidgetWrap):
-    def __init__(self,  choices):
+    def __init__(self, choices):
         super(Service, self).__init__(
             ActionButton([u" > go to ", 'Service'], self.enter_place))
         self.heading = urwid.Text([u"\nLocation: ", 'Service', "\n"])
         self.choices = choices
+        self.interactions = []
         # create links back to ourself
-        for child in choices:
+
+    def get_interactions(self):
+        for child in self.choices:
             getattr(child, 'choices', []).insert(0, self)
+        return None
 
     def enter_place(self, button):
         game.update_place(self)
-
 
 class ServiceBike(urwid.WidgetWrap):
     def __init__(self, choices):
@@ -81,23 +102,30 @@ class ServiceBike(urwid.WidgetWrap):
             ActionButton([u" > go to ", 'Service Bike'], self.enter_place))
         self.heading = urwid.Text([u"\nLocation: ", 'Service Bike', "\n"])
         self.choices = choices
+        self.interactions = []
         # create links back to ourself
-        for child in choices:
+
+    def get_interactions(self):
+        for child in self.choices:
             getattr(child, 'choices', []).insert(0, self)
+        return None
 
     def enter_place(self, button):
         game.update_place(self)
 
-
-class Bike(urwid.WidgetWrap):
+class BikeView(urwid.WidgetWrap):
     def __init__(self, choices):
-        super(Bike, self).__init__(
+        super(BikeView, self).__init__(
             ActionButton([u" > go to ", 'Bike'], self.enter_place))
         self.heading = urwid.Text([u"\nLocation: ", 'Bike', "\n"])
         self.choices = choices
+        self.interactions = []
         # create links back to ourself
-        for child in choices:
+
+    def get_interactions(self):
+        for child in self.choices:
             getattr(child, 'choices', []).insert(0, self)
+        return None
 
     def enter_place(self, button):
         game.update_place(self)
@@ -107,14 +135,28 @@ class Load(urwid.WidgetWrap):
         super(Load, self).__init__(
             ActionButton([u" > go to ", 'Load'], self.enter_place))
         self.heading = urwid.Text([u"\nLocation: ", 'Load', "\n"])
+        self.interactions = []
         self.choices = choices
         # create links back to ourself
-        for child in choices:
+
+    def get_interactions(self):
+        self.interactions = []
+        for child in self.choices:
             getattr(child, 'choices', []).insert(0, self)
+
+        for bike in bikes:
+            self.interactions.append(ActionButton(['load: ', bike.bike_brand], self.grab_bike))
+
+        if len(self.interactions) > 0:
+            return self.interactions
+        else:
+            return None
+
+    def grab_bike(self, bike):
+        selected_bike = bike
 
     def enter_place(self, button):
         game.update_place(self)
-
 
 class New(urwid.WidgetWrap):
     def __init__(self, choices):
@@ -122,54 +164,62 @@ class New(urwid.WidgetWrap):
             ActionButton([u" > go to ", 'New'], self.enter_place))
         self.heading = urwid.Text([u"\nLocation: ", 'New', "\n"])
         self.choices = choices
+        self.interactions = []
+        self.bike_brand = ''
+        self.bike_model = ''
+        self.bike_year = ''
+        self.bike_owner = ''
+        self.get_interactions()
         # create links back to ourself
-        for child in choices:
-            getattr(child, 'choices', []).insert(0, self)
+
+    def get_interactions(self):
+        self.interactions = []
+        self.interactions.append(urwid.Text('fill bike details'))
+        self.bike_brand = urwid.Edit("brand: ")
+        self.bike_model = urwid.Edit("model: ")
+        self.bike_year = urwid.Edit("year: ")
+        self.bike_owner = urwid.Edit("owner: ")
+        self.interactions.append(self.bike_brand)
+        self.interactions.append(self.bike_model)
+        self.interactions.append(self.bike_year)
+        self.interactions.append(self.bike_owner)
+        self.interactions.append(ActionButton([u" > Create  ", 'Bike'], self.create_bike))
+        return self.interactions
 
     def enter_place(self, button):
         game.update_place(self)
 
+    def create_bike(self, other_arg):
+        bike = Bike(self.bike_brand, self.bike_model, self.bike_year, self.bike_owner)
+        bikes.append(bike)
+        game.update_place(self)
+
+
 class Start(object):
     def __init__(self):
-        self.log = urwid.SimpleFocusListWalker([],wrap_around=False)
+        self.log = urwid.SimpleFocusListWalker([], wrap_around=False)
 
         self.top = urwid.ListBox(self.log)
         self.inventory = set()
         self.update_place(map_top)
-        self.header
 
     def update_place(self, place):
-        if self.log: # disable interaction with previous place
-            self.log[-1] = urwid.WidgetDisable(self.log[-1])
+        self.log.clear()
         self.log.append(urwid.Pile([place.heading] + place.choices))
-        #prueba text
-        name_edit = urwid.Edit("Name: ")
-        self.header = urwid.Text('Fill your details')
-        self.log.append(self.header)
-        self.log.append(name_edit)
-        urwid.connect_signal(name_edit, 'change', self.name_changed)
-        #prueba text
+        if place.get_interactions():
+            for i in place.get_interactions():
+                self.log.append(i)
         self.top.focus_position = len(self.log) - 1
         self.place = place
-
-    def name_changed(self, w, x):
-        self.header.set_text('Hello % s!' % x)
-
-    def take_thing(self, thing):
-        self.inventory.add(thing.name)
-        if self.inventory >= set([u'sugar', u'lemon', u'jug']):
-            response = urwid.Text(u'You can make lemonade!\n')
-            done = ActionButton(u' - Joy', exit_program)
-            self.log[:] = [response, done]
-        else:
-            self.update_place(self.place)
-
 
 def exit_program(button):
     raise urwid.ExitMainLoop()
 
-map_top = Main([Service([SelectBike([])]),Workshop([SelectBike([])]),Bike([Load([]),New([])])])
 
+bikes: Bike = []
+selected_bike = ''
+map_top = Main([Service([SelectBike([])]), Workshop([SelectBike([])]), BikeView([Load([]), New([])])])
 
 game = Start()
 urwid.MainLoop(game.top, palette=[('reversed', 'standout', '')]).run()
+
