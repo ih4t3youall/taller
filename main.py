@@ -254,18 +254,26 @@ class BikeView(urwid.WidgetWrap):
         game.update_place(Load())
 
 class PopUp(urwid.WidgetWrap):
-    def __init__(self,funsion):
+    def __init__(self, bikeService):
         super(Load, self)
-        self.funsion = funsion
+        self.index_bike = bikeService[0]
+        self.index_service = bikeService[1]
         self.heading = urwid.Text([u"\nconfirm window ", '', "\n"])
 
     def get_interactions(self):
         interactions = []
         interactions.append(urwid.Text("are you sure you want to remove this bike?"))
-        interactions.append(ActionButton('Ok',self.funsion))
+        interactions.append(ActionButton('Ok',self.delete))
         interactions.append(ActionButton('No',self.go_back))
+
+    def delete(self):
+        if self.index_service:
+            bikes[self.index_bike].pop(self.index_service)
+        else:
+            bikes.pop(self.index_bike)
+
     def go_back(self,object):
-        game.update_place(Main())
+        game.update_place(Load())
 
 
 class Load(urwid.WidgetWrap):
@@ -286,8 +294,10 @@ class Load(urwid.WidgetWrap):
             self.interactions.append(urwid.Text('model: ' + bike.bike_model))
             self.interactions.append(urwid.Text('year: ' + bike.bike_year))
             self.interactions.append(urwid.Text('owner: ' + bike.bike_owner))
+            self.interactions.append(urwid.Text('kilometers in admission: ' + bike.bike_kilometers))
+            self.interactions.append(urwid.Text('date of admission: ' + bike.bike_date))
             self.interactions.append(urwid.Text("---------------------------------------"))
-            self.interactions.append(SelectionButton('Delete Bike. ', self.delete_bike, bike_cont))
+            self.interactions.append(SelectionButton('Delete Bike. ', self.delete_bike, [bike_cont]))
             self.interactions.append(urwid.Text('Service history'))
             if bike.get_services():
                 service_cont = 0
@@ -335,6 +345,7 @@ class New(urwid.WidgetWrap):
         self.bike_model = ''
         self.bike_year = ''
         self.bike_owner = ''
+        self.bike_kilometers = ''
 
     def get_interactions(self):
         interactions = []
@@ -343,10 +354,12 @@ class New(urwid.WidgetWrap):
         self.bike_model = urwid.Edit("model: ")
         self.bike_year = urwid.Edit("year: ")
         self.bike_owner = urwid.Edit("owner: ")
+        self.bike_kilometers = urwid.Edit("kilometers: ")
         interactions.append(self.bike_brand)
         interactions.append(self.bike_model)
         interactions.append(self.bike_year)
         interactions.append(self.bike_owner)
+        interactions.append(self.bike_kilometers)
         interactions.append(ActionButton([u" > Create  ", 'Bike'], self.create_bike))
         interactions.append(ActionButton("go Back: ", self.go_back))
         return interactions
@@ -358,7 +371,7 @@ class New(urwid.WidgetWrap):
         game.update_place(BikeView())
 
     def create_bike(self, bikeAux):
-        bike = Bike(self.bike_brand, self.bike_model, self.bike_year, self.bike_owner)
+        bike = Bike(self.bike_brand, self.bike_model, self.bike_year, self.bike_owner, self.bike_kilometers)
         bikes.append(bike)
         save_bike()
         game.update_place(BikeView())
