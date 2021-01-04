@@ -1,7 +1,9 @@
+from pathlib import Path
 import pickle
-
+import os
 import urwid
 from Bike import Bike
+from Services import Services
 
 
 class ActionButton(urwid.Button):
@@ -34,6 +36,7 @@ class Main(urwid.WidgetWrap):
         self.interactions.append(ActionButton('Service', self.go_to_service))
         self.interactions.append(ActionButton('Workshop', self.go_to_workshop))
         self.interactions.append(ActionButton('Bike', self.go_to_bike))
+        self.interactions.append(ActionButton('Exit', exit_program))
         return self.interactions
 
     def enter_place(self, object):
@@ -72,6 +75,72 @@ class Workshop(urwid.WidgetWrap):
         game.update_place(self)
 
 
+class DoService(urwid.WidgetWrap):
+    def __init__(self, bike_selected):
+        super(DoService, self)
+        self.bike_selected = bike_selected
+        self.heading = urwid.Text([u"\nLocation: ", 'Do workshop', "\n"])
+        self.oil = ''
+        self.oil_filter = ''
+        self.air_filter = ''
+        self.fbf = ''
+        self.rbf = ''
+        self.text = ''
+        self.kilometers = ''
+
+    def get_interactions(self):
+        interactions = []
+        interactions.append(urwid.Text(self.bike_selected.bike_brand))
+        interactions.append(urwid.Text(self.bike_selected.bike_model))
+        interactions.append(urwid.Text(self.bike_selected.bike_year))
+        interactions.append(urwid.Text(self.bike_selected.bike_owner))
+        interactions.append(urwid.Text("***************************"))
+        self.oil = urwid.CheckBox('oil change', False)
+        interactions.append(self.oil)
+        self.oil_filter = urwid.CheckBox('oil filter change', False)
+        interactions.append(self.oil_filter)
+        self.air_filter = urwid.CheckBox('air filter change', False)
+        interactions.append(self.air_filter)
+        self.fbf = urwid.CheckBox('front break fluid', False)
+        interactions.append(self.fbf)
+        self.rbf = urwid.CheckBox('rear break fluid', False)
+        interactions.append(self.rbf)
+        self.kilometers = urwid.Edit("Kilometers: ")
+        interactions.append(self.kilometers)
+        self.text = urwid.Edit("Preformed tasks (oil used, etc): ")
+        interactions.append(self.text)
+        interactions.append(ActionButton("Aceptar", self.save_service))
+        return interactions
+
+    def save_service(self, object):
+        service_done = Services(self.oil.get_state(), self.oil_filter.get_state(),self.air_filter.get_state(), self.fbf.get_state(), self.rbf.get_state(), self.kilometers.get_edit_text(), self.text.get_edit_text())
+        self.bike_selected.add_service(service_done)
+        save_bike()
+        game.update_place(Main())
+
+
+class DoWorkshop(urwid.WidgetWrap):
+    def __init__(self,bike_selected):
+        super(DoWorkshop, self)
+        self.bike_selected = bike_selected
+        self.heading = urwid.Text([u"\nLocation: ", 'Do service', "\n"])
+
+    def get_interactions(self):
+        interactions = []
+        interactions.append(urwid.Text(self.bike_selected.bike_brand))
+        interactions.append(urwid.Text(self.bike_selected.bike_model))
+        interactions.append(urwid.Text(self.bike_selected.bike_year))
+        interactions.append(urwid.Text(self.bike_selected.bike_owner))
+        interactions.append(urwid.Text("***************************"))
+        interactions.append(urwid.Text("Preformed tasks"))
+        interactions.append(urwid.Edit())
+        interactions.append(ActionButton("Aceptar",self.save_workshop))
+        return interactions
+
+    def save_workshop(self, object):
+        print("save stuff")
+        game.update_place(Main())
+
 class SelectBike(urwid.WidgetWrap):
     def __init__(self, type):
         super(SelectBike, self)
@@ -95,21 +164,20 @@ class SelectBike(urwid.WidgetWrap):
             interactions.append(urwid.Text('**********************************'))
         return interactions
 
-    def go_back(self,object):
-        game.update_place(Workshop())
+    def go_back(self, object):
+        if self.type == 'Workshop':
+            game.update_place(Workshop())
+        else:
+            game.update_place(Service())
 
-    def go_to_workshop(self, object):
+    def go_to_workshop(self, button):
+        game.update_place(DoWorkshop(button.get_selection()))
         print("do owrkshop")
 
-    def go_to_service(self,object):
-        print("do service")
+    def go_to_service(self, button):
+        game.update_place(DoService(button.get_selection()))
 
-    def go_back(self):
-        game.update_place(Main())
 
-    def grab_bike(self, selector):
-        selected_bike.select_bike(selector.get_selection())
-        game.update_place(TestView())
 
 
 class WorkshopBike(urwid.WidgetWrap):
@@ -185,6 +253,20 @@ class BikeView(urwid.WidgetWrap):
     def go_to_load(self, object):
         game.update_place(Load())
 
+class PopUp(urwid.WidgetWrap):
+    def __init__(self,funsion):
+        super(Load, self)
+        self.funsion = funsion
+        self.heading = urwid.Text([u"\nconfirm window ", '', "\n"])
+
+    def get_interactions(self):
+        interactions = []
+        interactions.append(urwid.Text("are you sure you want to remove this bike?"))
+        interactions.append(ActionButton('Ok',self.funsion))
+        interactions.append(ActionButton('No',self.go_back))
+    def go_back(self,object):
+        game.update_place(Main())
+
 
 class Load(urwid.WidgetWrap):
     def __init__(self):
@@ -197,43 +279,49 @@ class Load(urwid.WidgetWrap):
         self.interactions = []
         self.interactions.append(ActionButton('go Back',self.go_back))
         self.interactions.append(urwid.Text('select bike'))
+        bike_cont = 0
         for bike in bikes:
             self.interactions.append(urwid.Text('**********************************'))
             self.interactions.append(urwid.Text('brand: ' + bike.bike_brand))
             self.interactions.append(urwid.Text('model: ' + bike.bike_model))
             self.interactions.append(urwid.Text('year: ' + bike.bike_year))
             self.interactions.append(urwid.Text('owner: ' + bike.bike_owner))
-            self.interactions.append(SelectionButton('load bike. ', self.grab_bike, bike))
-            self.interactions.append(urwid.Text('**********************************'))
+            self.interactions.append(urwid.Text("---------------------------------------"))
+            self.interactions.append(SelectionButton('Delete Bike. ', self.delete_bike, bike_cont))
+            self.interactions.append(urwid.Text('Service history'))
+            if bike.get_services():
+                service_cont = 0
+                for service in bike.get_services():
+                    self.interactions.append(urwid.Text("Oil change: "+str(service.oil)))
+                    self.interactions.append(urwid.Text("Oil filter change: "+str(service.oil_filter)))
+                    self.interactions.append(urwid.Text("Air filter: "+str(service.air_filter)))
+                    self.interactions.append(urwid.Text("Front break fluid: "+str(service.fbf)))
+                    self.interactions.append(urwid.Text("Rear break fluid: "+str(service.rbf)))
+                    self.interactions.append(urwid.Text("Kilometers: "+str(service.kilometers)))
+                    self.interactions.append(urwid.Text("Description: "+str(service.description)))
+                    self.interactions.append(urwid.Text("Date: " + str(service.date)))
+                    self.interactions.append(SelectionButton('Delete Service. ',self.delete_service, [bike_cont,service_cont]))
+                    self.interactions.append(urwid.Text('**********************************'))
+                    service_cont = service_cont +1
+            bike_cont = bike_cont+1
 
         return self.interactions
 
     def go_back(self, object):
         game.update_place(BikeView())
 
-    def grab_bike(self, selector):
-        selected_bike.select_bike(selector.get_selection())
-        game.update_place(TestView())
+    def delete_service(self, button):
+        #el primero es la posicion de la moto y el segundo la posicion del service dentro de la  moto
+        service_to_delete = button.get_selection()
+        bikes[service_to_delete[0]].get_services().pop(service_to_delete[1])
+        save_bike()
+        game.update_place(Load())
 
-    def enter_place(self, button):
-        game.update_place(self)
-
-class TestView(urwid.WidgetWrap):
-    def __init__(self):
-        super(TestView, self)
-        self.heading = urwid.Text([u"\nLocation: ", 'New', "\n"])
-
-    def get_interactions(self):
-        interactions = []
-        interactions.append(urwid.Text(selected_bike.get_bike().bike_brand))
-        interactions.append(urwid.Text(selected_bike.get_bike().bike_owner))
-        interactions.append(urwid.Text(selected_bike.get_bike().bike_model))
-        interactions.append(urwid.Text(selected_bike.get_bike().bike_year))
-        interactions.append(ActionButton('go back', self.go_back))
-        return interactions
-
-    def go_back(self, object):
-        game.update_place(Main())
+    def delete_bike(self, button):
+        bike_to_delete = button.get_selection()
+        bikes.pop(bike_to_delete)
+        save_bike()
+        game.update_place(Load())
 
     def enter_place(self, button):
         game.update_place(self)
@@ -272,6 +360,7 @@ class New(urwid.WidgetWrap):
     def create_bike(self, bikeAux):
         bike = Bike(self.bike_brand, self.bike_model, self.bike_year, self.bike_owner)
         bikes.append(bike)
+        save_bike()
         game.update_place(BikeView())
 
 
@@ -287,7 +376,8 @@ class Start(object):
         if place.get_interactions():
             for i in place.get_interactions():
                 self.log.append(i)
-        self.top.focus_position = len(self.log) - 1
+        #setea el menu seleccionado
+        self.top.focus_position = 1
 
 
 
@@ -302,9 +392,37 @@ class SelectedBike():
     def get_bike(self):
         return self.selectedBike
 
+def check_folders(folder):
+    if not os.path.exists(folder):
+        try:
+            os.mkdir(folder)
+        except OSError:
+            print("Creation of the directory %s failed" % folder)
+def load_bikes(dataFile):
+    if os.path.exists(dataFile):
+        bikes = None
+        with open(dataFile, 'rb') as tallerData:
+            bikes = pickle.load(tallerData)
+        return bikes
+    return []
 
-bikes: Bike = []
-selected_bike = SelectedBike()
+def save_bike():
+    with open(dataFile, 'wb') as to_save:
+        pickle.dump(bikes, to_save)
+
+
+
+folder = str(Path.home()) + "/Taller"
+dataFile = folder + "/taller.data"
+check_folders(folder)
+bikes = []
+bikes = load_bikes(dataFile)
+
+
+
+
+
+
 
 game = Start()
 urwid.MainLoop(game.top, palette=[('reversed', 'standout', '')]).run()
