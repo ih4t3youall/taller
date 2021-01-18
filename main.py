@@ -269,20 +269,34 @@ class BikeView(urwid.WidgetWrap):
         game.update_place(Load())
 
 class PopUp(urwid.WidgetWrap):
-    def __init__(self, bikeService):
+    def __init__(self, bikeService, isService):
         super(PopUp, self)
         self.index_bike = bikeService[0]
         self.index_service = bikeService[1]
         self.heading = urwid.Text([u"\nconfirm window ", '', "\n"])
+        self.isService = isService
 
     def get_interactions(self):
         interactions = []
         interactions.append(urwid.Text("are you sure you want to remove this?"))
-        interactions.append(ActionButton('Ok',self.delete))
+        if self.isService:
+            interactions.append(ActionButton('Ok',self.delete_service))
+        else:
+            interactions.append(ActionButton('Ok', self.delete_workshop))
+
         interactions.append(ActionButton('No',self.go_back))
         return interactions
 
-    def delete(self, object):
+
+    def delete_workshop(self, object):
+        if self.index_service != -1:
+            bikes[self.index_bike].get_preformed_tasks().pop(self.index_service)
+        else:
+            bikes.pop(self.index_bike)
+        save_bike()
+        game.update_place(Load())
+
+    def delete_service(self, object):
         if self.index_service != -1:
             bikes[self.index_bike].get_services().pop(self.index_service)
         else:
@@ -368,12 +382,14 @@ class Load(urwid.WidgetWrap):
                     self.interactions.append(urwid.Text('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'))
                     service_cont = service_cont +1
             if bike.get_preformed_tasks():
+                task_count = 0
                 for task in bike.get_preformed_tasks():
                     self.interactions.append(urwid.Text('ooooooooooooooooooo Preformed Task ooooooooooooooooooooooooooo'))
                     self.interactions.append(urwid.Text(task.preformed_tasks))
                     self.interactions.append(urwid.Text(task.task_date))
-                    self.interactions.append(SelectionButton('Delete Task. ',self.delete_task, [bike_cont, service_cont]))
+                    self.interactions.append(SelectionButton('Delete Task. ',self.delete_task, [bike_cont, task_count]))
                     self.interactions.append(urwid.Text('ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo'))
+                    task_count = task_count + 1
             bike_cont = bike_cont+1
             self.interactions.append(urwid.Text('**********************************'))
             self.interactions.append(urwid.Text(''))
@@ -387,12 +403,13 @@ class Load(urwid.WidgetWrap):
         #el primero es la posicion de la moto y el segundo la posicion del service dentro de la  moto
         service_to_delete = button.get_selection()
         #le mando las coordenandas que tiene que borrar
-        game.update_place(PopUp(service_to_delete))
+        game.update_place(PopUp(service_to_delete,True))
 
     def delete_task(self, button):
         #TODO temrinar esto
         #el primero es la posicion de la moto y el segundo la posicion del service dentro de la  moto
-        service_to_delete = button.get_selection()
+        task_to_delete = button.get_selection()
+        game.update_place(PopUp(task_to_delete, False))
         #le mando las coordenandas que tiene que borrar
         #game.update_place(PopUp(service_to_delete))
 
