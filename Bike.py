@@ -30,17 +30,26 @@ class Bike:
         
         services_json = json.dumps([ob.__dict__ for ob in self.services])
         preformed_tasks_json = json.dumps([ob.__dict__ for ob in self.preformed_tasks ])
+        to_json =""
 
-        return  "{"\
+        to_json+= "{"\
         "\"bike_brand\":\""+self.bike_brand+"\","\
         "\"bike_model\":\""+ self.bike_model+"\","\
         "\"bike_year\":\""+ self.bike_year+"\","\
         "\"bike_owner\":\""+ self.bike_owner+"\","\
         "\"bike_kilometers\":\""+ self.bike_kilometers+"\","\
         "\"licence_plate\":\""+ self.licence_plate+"\","\
-        "\"bike_date\":\""+ datetime.date.today().strftime("%d-%m-%Y")+"\","\
-        "\"services\": "+services_json+""\
-        "}"
+        "\"bike_date\":\""+ datetime.date.today().strftime("%d-%m-%Y")+"\""
+        if (len(self.services) != 0):
+            to_json+=","
+            to_json+="\"services\": "+services_json+""
+        if (len(self.preformed_tasks) != 0):
+            to_json+=","
+            to_json+="\"preformed_tasks\": "+preformed_tasks_json+""
+            
+        to_json+="}"
+        #"}"
+        return to_json
         #"\"preformed_tasks\": "+preformed_tasks_json+""\ #tengo que ver como hacer para no escribir si no hay
 
 

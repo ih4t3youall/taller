@@ -9,12 +9,14 @@ class ServerComm:
         response = requests.post(url, data)
         #jsonObject = json.dumps(bikes.__dict__)
         writer = open("file.txt","w")
-        writer.write("[")
+        to_save = ""
+        to_save += "["
         for bike in bikes:
-            writer.write(bike.to_json())
-            #hay que sacar esa comma
-            writer.write(",")
-        writer.write("]")
+            to_save += bike.to_json()
+            to_save += ","
+        to_save = to_save[:-1]
+        to_save += "]"
+        writer.write(to_save)
         writer.close()
         print(response)
 
