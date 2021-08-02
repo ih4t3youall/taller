@@ -6,6 +6,7 @@ from Bike import Bike
 from Services import Services
 from BikeCreator import BikeCreator
 from PreformedTask import PreformedTask
+from ServerComm import ServerComm
 
 
 class ActionButton(urwid.Button):
@@ -38,11 +39,21 @@ class Main(urwid.WidgetWrap):
         self.interactions.append(ActionButton('Service', self.go_to_service))
         self.interactions.append(ActionButton('Workshop', self.go_to_workshop))
         self.interactions.append(ActionButton('Bike', self.go_to_bike))
+        self.interactions.append(ActionButton('backUpServer: ', self.go_to_bkup))
+        self.interactions.append(ActionButton('retrieve from server: ', self.go_to_get_bkup))
         self.interactions.append(ActionButton('Exit', exit_program))
         return self.interactions
 
     def enter_place(self, object):
         game.update_place(self)
+
+    def go_to_bkup(self, object):
+        server = ServerComm()
+        server.backup(bikes)
+        print("doNothing")
+
+    def go_to_get_bkup(self, object):
+        print("do nothing")
 
     def go_to_service(self, object):
         game.update_place(Service())
@@ -415,7 +426,7 @@ class Load(urwid.WidgetWrap):
 
     def delete_bike(self, button):
         bike_to_delete = button.get_selection()
-        game.update_place(PopUp(bike_to_delete))
+        game.update_place(PopUp(bike_to_delete, False))
 
     def enter_place(self, button):
         game.update_place(self)

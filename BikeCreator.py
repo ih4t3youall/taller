@@ -12,7 +12,16 @@ class BikeCreator:
         self.date = ''
         self.services = []
 
+    def clear(self):
+        self.bike_brand = urwid.Edit("brand: ")
+        self.bike_model = urwid.Edit("model: ")
+        self.bike_year = urwid.Edit("year: ")
+        self.bike_owner = urwid.Edit("owner: ")
+        self.bike_kilometers = urwid.Edit("kilometers: ")
+        self.licence_plate = urwid.Edit("Licence plate: ")
+
     def populate_interactions(self, interactions):
+        self.clear()
         interactions.append(self.bike_brand)
         interactions.append(self.bike_model)
         interactions.append(self.bike_year)
